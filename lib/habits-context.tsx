@@ -16,7 +16,11 @@ interface HabitsContextValue {
   habits: Habit[];
   toggleHabit: (id: string) => void;
   addHabit: (input: NewHabit) => void;
+  updateHabit: (id: string, input: NewHabit) => void;
+  deleteHabit: (id: string) => void;
 }
+
+const byTime = (a: Habit, b: Habit) => parseDisplayTime(a.time) - parseDisplayTime(b.time);
 
 const HabitsContext = React.createContext<HabitsContextValue | null>(null);
 
@@ -37,10 +41,22 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
       history: Array(7).fill(false),
       done: false,
     };
-    setHabits((hs) => [...hs, habit].sort((a, b) => parseDisplayTime(a.time) - parseDisplayTime(b.time)));
+    setHabits((hs) => [...hs, habit].sort(byTime));
   }, []);
 
-  const value = React.useMemo(() => ({ habits, toggleHabit, addHabit }), [habits, toggleHabit, addHabit]);
+  const updateHabit = React.useCallback((id: string, input: NewHabit) => {
+    setHabits((hs) =>
+      hs
+        .map((h) => (h.id === id ? { ...h, name: input.name.trim(), group: input.group, time: formatTimeInput(input.time) } : h))
+        .sort(byTime)
+    );
+  }, []);
+
+  const deleteHabit = React.useCallback((id: string) => {
+    setHabits((hs) => hs.filter((h) => h.id !== id));
+  }, []);
+
+  const value = React.useMemo(() => ({ habits, toggleHabit, addHabit, updateHabit, deleteHabit }), [habits, toggleHabit, addHabit, updateHabit, deleteHabit]);
   return <HabitsContext.Provider value={value}>{children}</HabitsContext.Provider>;
 }
 

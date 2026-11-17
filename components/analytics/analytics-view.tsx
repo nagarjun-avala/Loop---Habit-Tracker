@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Plus } from "lucide-react";
+import { BarChart3, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -11,12 +12,12 @@ import { StatCard } from "@/components/habits/stat-card";
 import { buildHeatmap } from "@/lib/analytics-data";
 import { useHabits } from "@/lib/habits-context";
 import { weekDays } from "@/lib/mock-data";
+import type { Habit } from "@/lib/types";
 import { Heatmap } from "./heatmap";
 import { HabitRateRow } from "./habit-rate-row";
 import { WeeklyBars } from "./weekly-bars";
 
-export function AnalyticsView() {
-  const { habits } = useHabits();
+function AnalyticsContent({ habits }: { habits: Habit[] }) {
   const heatmap = React.useMemo(buildHeatmap, []);
 
   const done = habits.filter((h) => h.done).length;
@@ -31,16 +32,6 @@ export function AnalyticsView() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Last 7 days and beyond"
-        title="Analytics"
-        actions={
-          <>
-            <ThemeToggle />
-            <AddHabitDialog trigger={<Button><Plus className="h-4 w-4" aria-hidden /> Add habit</Button>} />
-          </>
-        }
-      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         <StatCard label="Completion rate" value={`${avg}%`} caption="Average over the last 7 days" />
@@ -65,6 +56,37 @@ export function AnalyticsView() {
           ))}
         </ul>
       </SectionCard>
+    </>
+  );
+}
+
+export function AnalyticsView() {
+  const { habits } = useHabits();
+  const addButton = <Button><Plus className="h-4 w-4" aria-hidden /> Add habit</Button>;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Last 7 days and beyond"
+        title="Analytics"
+        actions={
+          <>
+            <ThemeToggle />
+            <AddHabitDialog trigger={addButton} />
+          </>
+        }
+      />
+
+      {habits.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="No data yet"
+          description="Add a habit and check it off to see your progress here."
+          action={<AddHabitDialog trigger={addButton} />}
+        />
+      ) : (
+        <AnalyticsContent habits={habits} />
+      )}
     </>
   );
 }

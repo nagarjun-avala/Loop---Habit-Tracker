@@ -20,3 +20,9 @@ export function groupForTime(value: string): TimeOfDay {
   const hh = Number(value.split(":")[0]);
   return hh < 12 ? "Morning" : hh < 17 ? "Afternoon" : "Evening";
 }
+
+/** "1:05 PM" -> "13:05" (for <input type="time">) */
+export function toInputTime(display: string): string {
+  const mins = parseDisplayTime(display);
+  return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+}

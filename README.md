@@ -10,6 +10,7 @@ npm run dev
 ## Pages
 - `/` Today: check off habits, add new ones via the dialog.
 - `/analytics` Analytics: weekly bars, 12-week heatmap, per-habit rates.
+- `/habits` Habits: edit or delete habits (grouped by time of day).
 
 State is mock and in memory (`lib/habits-context.tsx`), so a refresh resets it.
 Add more shadcn components with `npx shadcn@latest add <name>`.
