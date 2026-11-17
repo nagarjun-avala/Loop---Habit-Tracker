@@ -1,4 +1,4 @@
-# Loop – Habit Tracker (Today page)
+# Loop – Habit Tracker
 
 Next.js 14 (App Router) · TypeScript · Tailwind CSS · shadcn/ui · next-themes
 
@@ -7,5 +7,10 @@ npm install
 npm run dev
 ```
 
-Add more shadcn components as needed: `npx shadcn@latest add dropdown-menu dialog ...`
-Colors live as CSS variables in `app/globals.css` (`:root` and `.dark`).
+## Pages
+- `/` Today: check off habits, add new ones via the dialog.
+- `/analytics` Analytics: weekly bars, 12-week heatmap, per-habit rates.
+
+State is mock and in memory (`lib/habits-context.tsx`), so a refresh resets it.
+Add more shadcn components with `npx shadcn@latest add <name>`.
+Theme colors are CSS variables in `app/globals.css` (`:root` and `.dark`).
