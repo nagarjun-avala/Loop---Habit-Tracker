@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F6F4EE;
+  --foreground: #1B1F1D;
+  --card: #FFFFFF;
+  --primary: #2F6B4F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FFFFFF;
+  --muted: #EFEBE0;
+  --muted-foreground: #5B635F;
+  --accent: #E8F0EA;
+  --accent-foreground: #3B4A42;
+  --accent-border: #CFE0D4;
+  --border: #E7E3D8;
+  --input: #D9D4C5;
+  --ring: #2F6B4F;
+  --success: #2F6B4F;
+  --track: #ECE8DC;
+  --dot-empty: #E1DCCD;
+  --check-border: #A9A493;
+  --sidebar: #FBFAF6;
+  --sidebar-border: #E4E0D5;
+}
+
+.dark {
+  --background: #121614;
+  --foreground: #EDEFEA;
+  --card: #1B211E;
+  --primary: #2F6B4F;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1B211E;
+  --muted: #232A26;
+  --muted-foreground: #A3ABA6;
+  --accent: #1C2B23;
+  --accent-foreground: #B9D3C3;
+  --accent-border: #2D4538;
+  --border: #2A312D;
+  --input: #38403B;
+  --ring: #6FBF94;
+  --success: #6FBF94;
+  --track: #2A312D;
+  --dot-empty: #313833;
+  --check-border: #6F7872;
+  --sidebar: #161B18;
+  --sidebar-border: #2A312D;
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+}
