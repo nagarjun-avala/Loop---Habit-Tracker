@@ -7,7 +7,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useHabits } from "@/lib/habits-context";
-import { groupOrder, TODAY_LABEL, weekDays, weeklyStat } from "@/lib/mock-data";
+import { groupOrder, weekDays, weeklyStat } from "@/lib/mock-data";
+import { useNow } from "@/lib/use-now";
+import { useSettings } from "@/lib/settings-context";
 import { AddHabitDialog } from "./add-habit-dialog";
 import { DailyProgressCard } from "./daily-progress-card";
 import { HabitGroup } from "./habit-group";
@@ -16,6 +18,9 @@ import { WeekStrip } from "./week-strip";
 
 export function TodayView() {
   const { habits, toggleHabit } = useHabits();
+  const { settings } = useSettings();
+  const { greeting, dateLabel } = useNow();
+  const name = settings.name.trim();
 
   const done = habits.filter((h) => h.done).length;
   const nextUp = habits.find((h) => !h.done);
@@ -27,8 +32,8 @@ export function TodayView() {
   return (
     <>
       <PageHeader
-        eyebrow={TODAY_LABEL}
-        title="Good morning. Let’s build the day."
+        eyebrow={dateLabel}
+        title={`${greeting}${name ? `, ${name}` : ""}. Let’s build the day.`}
         actions={
           <>
             <ThemeToggle />
