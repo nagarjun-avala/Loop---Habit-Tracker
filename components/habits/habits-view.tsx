@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useHabits } from "@/lib/habits-context";
-import { groupOrder } from "@/lib/mock-data";
+import { groupOrder } from "@/lib/constants";
 import { AddHabitDialog } from "./add-habit-dialog";
 import { HabitManageRow } from "./habit-manage-row";
 

@@ -7,7 +7,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useHabits } from "@/lib/habits-context";
-import { groupOrder, weekDays, weeklyStat } from "@/lib/mock-data";
+import type { Overview, WeekResponse } from "@/lib/api-types";
+import { groupOrder } from "@/lib/constants";
+import { describeDelta } from "@/lib/compare";
+import { useApi } from "@/lib/use-api";
 import { useNow } from "@/lib/use-now";
 import { useSettings } from "@/lib/settings-context";
 import { AddHabitDialog } from "./add-habit-dialog";
@@ -17,7 +20,9 @@ import { StatCard } from "./stat-card";
 import { WeekStrip } from "./week-strip";
 
 export function TodayView() {
-  const { habits, toggleHabit } = useHabits();
+  const { habits, toggleHabit, version } = useHabits();
+  const week = useApi<WeekResponse>("/analytics/week", version);
+  const overview = useApi<Overview>("/analytics/overview", version);
   const { settings } = useSettings();
   const { greeting, dateLabel } = useNow();
   const name = settings.name.trim();
@@ -25,7 +30,7 @@ export function TodayView() {
   const done = habits.filter((h) => h.done).length;
   const nextUp = habits.find((h) => !h.done);
   const longest = habits.length ? habits.reduce((a, b) => (b.streak > a.streak ? b : a)) : undefined;
-  const days = weekDays.map((d) => (d.isToday ? { ...d, percent: habits.length ? Math.round((done / habits.length) * 100) : 0 } : d));
+  const days = (week.data?.days ?? []).map((d) => (d.isToday ? { ...d, percent: habits.length ? Math.round((done / habits.length) * 100) : 0 } : d));
 
   const addButton = <Button><Plus className="h-4 w-4" aria-hidden /> Add habit</Button>;
 
@@ -66,7 +71,7 @@ export function TodayView() {
         <aside className="flex flex-col gap-6">
           <DailyProgressCard done={done} total={habits.length} nextUp={nextUp} />
           <StatCard label="Longest active streak" value={`${longest.streak} days`} caption={longest.name} />
-          <StatCard tone="highlight" label="This week" value={`${weeklyStat.percent}%`} caption={`Up ${weeklyStat.delta} points on last week.`} />
+          <StatCard tone="highlight" label="This week" value={overview.data?.completionRate != null ? `${overview.data.completionRate}%` : "–"} caption={overview.data ? describeDelta(overview.data.delta) : "Loading…"} />
         </aside>
       </div>
       )}

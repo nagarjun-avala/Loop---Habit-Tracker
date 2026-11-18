@@ -14,6 +14,7 @@ export interface Habit {
 export interface DaySummary {
   label: string;
   date: number;
+  isoDate?: string;
   /** completion %, null for future days */
   percent: number | null;
   isToday?: boolean;

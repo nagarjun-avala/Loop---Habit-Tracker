@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { BarChart3, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -9,43 +8,56 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AddHabitDialog } from "@/components/habits/add-habit-dialog";
 import { StatCard } from "@/components/habits/stat-card";
-import { buildHeatmap } from "@/lib/analytics-data";
+import type { HeatmapResponse, Overview, WeekResponse } from "@/lib/api-types";
+import { describeDelta } from "@/lib/compare";
 import { useHabits } from "@/lib/habits-context";
-import { weekDays } from "@/lib/mock-data";
 import type { Habit } from "@/lib/types";
-import { Heatmap } from "./heatmap";
+import { useApi } from "@/lib/use-api";
 import { HabitRateRow } from "./habit-rate-row";
+import { Heatmap } from "./heatmap";
 import { WeeklyBars } from "./weekly-bars";
 
+const HEATMAP_DAYS = 84;
+
 function AnalyticsContent({ habits }: { habits: Habit[] }) {
-  const heatmap = React.useMemo(buildHeatmap, []);
+  const { version } = useHabits();
+  const week = useApi<WeekResponse>("/analytics/week", version);
+  const heat = useApi<HeatmapResponse>(`/analytics/heatmap?days=${HEATMAP_DAYS}`, version);
+  const overview = useApi<Overview>("/analytics/overview", version);
 
-  const done = habits.filter((h) => h.done).length;
-  const days = weekDays.map((d) => (d.isToday ? { ...d, percent: Math.round((done / habits.length) * 100) } : d));
-
-  const tracked = days.filter((d) => d.percent !== null);
-  const avg = Math.round(tracked.reduce((s, d) => s + d.percent!, 0) / tracked.length);
-  const perfectDays = tracked.filter((d) => d.percent === 100).length;
-  const checkIns = habits.reduce((s, h) => s + h.history.slice(1).filter(Boolean).length + (h.done ? 1 : 0), 0);
-  const best = habits.reduce((a, b) => (b.streak > a.streak ? b : a));
+  const o = overview.data;
+  const levels = heat.data ? heat.data.days.map((d) => d.level) : Array<number>(HEATMAP_DAYS).fill(0);
   const ranked = [...habits].sort((a, b) => b.streak - a.streak);
+  const failed = [week, heat, overview].some((r) => r.error && !r.data);
 
   return (
     <>
+      {failed && (
+        <p role="alert" className="rounded-2xl border bg-card px-4 py-3 text-sm text-red-600 dark:text-red-400">
+          Couldn’t load some analytics. Check your connection and refresh.
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
-        <StatCard label="Completion rate" value={`${avg}%`} caption="Average over the last 7 days" />
-        <StatCard label="Check-ins" value={String(checkIns)} caption="Habits completed this week" />
-        <StatCard label="Perfect days" value={String(perfectDays)} caption="Days with every habit done" />
-        <StatCard tone="highlight" label="Best streak" value={`${best.streak} days`} caption={best.name} />
+        <StatCard label="Completion rate" value={o?.completionRate != null ? `${o.completionRate}%` : "–"} caption={o ? describeDelta(o.delta) : "Loading…"} />
+        <StatCard label="Check-ins" value={o ? String(o.checkIns) : "–"} caption="Habits completed this week" />
+        <StatCard label="Perfect days" value={o ? String(o.perfectDays) : "–"} caption="Days with every habit done" />
+        <StatCard
+          tone="highlight"
+          label="Best streak"
+          value={o?.bestStreak ? `${o.bestStreak.days} days` : "–"}
+          caption={o?.bestStreak?.name ?? "No streaks yet"}
+        />
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <SectionCard title="This week" description="Share of habits completed each day">
-          <WeeklyBars days={days} />
+          <div className="min-h-[230px]">
+            <WeeklyBars days={week.data?.days ?? []} />
+          </div>
         </SectionCard>
         <SectionCard title="Consistency" description="The last 12 weeks, day by day">
-          <Heatmap levels={heatmap} />
+          <Heatmap levels={levels} />
         </SectionCard>
       </div>
 
@@ -62,7 +74,11 @@ function AnalyticsContent({ habits }: { habits: Habit[] }) {
 
 export function AnalyticsView() {
   const { habits } = useHabits();
-  const addButton = <Button><Plus className="h-4 w-4" aria-hidden /> Add habit</Button>;
+  const addButton = (
+    <Button>
+      <Plus className="h-4 w-4" aria-hidden /> Add habit
+    </Button>
+  );
 
   return (
     <>
@@ -76,7 +92,6 @@ export function AnalyticsView() {
           </>
         }
       />
-
       {habits.length === 0 ? (
         <EmptyState
           icon={BarChart3}

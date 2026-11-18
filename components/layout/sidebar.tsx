@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
 import { navItems } from "./nav-items";
+import { UserMenu } from "./user-menu";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -31,6 +32,7 @@ export function Sidebar() {
           );
         })}
       </nav>
+      <UserMenu />
     </aside>
   );
 }

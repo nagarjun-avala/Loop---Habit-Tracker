@@ -7,7 +7,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useHabits } from "@/lib/habits-context";
-import { groupOrder } from "@/lib/mock-data";
+import { groupOrder } from "@/lib/constants";
 import { groupForTime, toInputTime } from "@/lib/time";
 import type { Habit, TimeOfDay } from "@/lib/types";
 
@@ -28,6 +28,8 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
   const [time, setTime] = React.useState("08:00");
   const [group, setGroup] = React.useState<TimeOfDay>("Morning");
   const [error, setError] = React.useState<string>();
+  const [formError, setFormError] = React.useState<string>();
+  const [submitting, setSubmitting] = React.useState(false);
 
   const onOpenChange = (next: boolean) => {
     setOpen(next);
@@ -36,6 +38,7 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
       setTime(habit ? toInputTime(habit.time) : "08:00");
       setGroup(habit?.group ?? "Morning");
       setError(undefined);
+      setFormError(undefined);
     }
   };
 
@@ -44,13 +47,21 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
     if (value) setGroup(groupForTime(value));
   };
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return setError("Give your habit a name.");
     if (!time) return setError("Pick a time for this habit.");
-    if (habit) updateHabit(habit.id, { name, group, time });
-    else addHabit({ name, group, time });
-    setOpen(false);
+    setSubmitting(true);
+    setFormError(undefined);
+    try {
+      if (habit) await updateHabit(habit.id, { name, group, time });
+      else await addHabit({ name, group, time });
+      setOpen(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -86,11 +97,13 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
             </Field>
           </div>
 
+          {formError && <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">{formError}</p>}
+
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancel</Button>
             </DialogClose>
-            <Button type="submit">{editing ? "Save changes" : "Add habit"}</Button>
+            <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : editing ? "Save changes" : "Add habit"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

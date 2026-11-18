@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { habits as initialHabits } from "@/lib/mock-data";
-import { loadJSON, saveJSON, todayKey } from "@/lib/storage";
+import { api } from "@/lib/api";
+import type { HabitDto } from "@/lib/api-types";
+import { notify } from "@/lib/notify";
+import { useSettings, type LoadStatus } from "@/lib/settings-context";
 import { formatTimeInput, parseDisplayTime } from "@/lib/time";
 import type { Habit, TimeOfDay } from "@/lib/types";
 
@@ -15,70 +17,104 @@ export interface NewHabit {
 
 interface HabitsContextValue {
   habits: Habit[];
-  /** false until saved data has been read from the browser */
-  ready: boolean;
-  resetHabits: () => void;
-  toggleHabit: (id: string) => void;
-  addHabit: (input: NewHabit) => void;
-  updateHabit: (id: string, input: NewHabit) => void;
-  deleteHabit: (id: string) => void;
+  status: LoadStatus;
+  /** Bumps after every successful change, so analytics can refetch. */
+  version: number;
+  refresh: () => Promise<void>;
+  toggleHabit: (id: string) => Promise<void>;
+  addHabit: (input: NewHabit) => Promise<void>;
+  updateHabit: (id: string, input: Partial<NewHabit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
 }
 
 const byTime = (a: Habit, b: Habit) => parseDisplayTime(a.time) - parseDisplayTime(b.time);
 
-const STORAGE_KEY = "loop:habits:v1";
+const fromDto = (d: HabitDto): Habit => ({
+  id: d.id,
+  name: d.name,
+  group: d.group,
+  time: formatTimeInput(d.time),
+  streak: d.streak,
+  history: d.history,
+  done: d.done,
+});
 
 const HabitsContext = React.createContext<HabitsContextValue | null>(null);
 
 export function HabitsProvider({ children }: { children: React.ReactNode }) {
-  const [habits, setHabits] = React.useState<Habit[]>(initialHabits);
-  const [ready, setReady] = React.useState(false);
+  const { status: settingsStatus } = useSettings();
+  const [habits, setHabits] = React.useState<Habit[]>([]);
+  const [status, setStatus] = React.useState<LoadStatus>("loading");
+  const [version, setVersion] = React.useState(0);
+  const habitsRef = React.useRef(habits);
+  habitsRef.current = habits;
+  const inFlight = React.useRef(new Set<string>());
+  const bump = () => setVersion((v) => v + 1);
 
-  // Load once on mount. Check-ins reset on a new day.
-  React.useEffect(() => {
-    const saved = loadJSON<{ day: string; habits: Habit[] }>(STORAGE_KEY);
-    if (saved && Array.isArray(saved.habits)) {
-      setHabits(saved.day === todayKey() ? saved.habits : saved.habits.map((h) => ({ ...h, done: false })));
+  const refresh = React.useCallback(async () => {
+    setStatus("loading");
+    try {
+      const res = await api.get<{ habits: HabitDto[] }>("/habits");
+      setHabits(res.habits.map(fromDto));
+      setStatus("ready");
+      setVersion((v) => v + 1);
+    } catch {
+      setStatus("error");
     }
-    setReady(true);
   }, []);
 
+  // wait for settings so the server knows this device's time zone before we ask for "today"
   React.useEffect(() => {
-    if (ready) saveJSON(STORAGE_KEY, { day: todayKey(), habits });
-  }, [habits, ready]);
+    if (settingsStatus === "ready") void refresh();
+  }, [settingsStatus, refresh]);
 
-  const resetHabits = React.useCallback(() => setHabits(initialHabits), []);
+  const toggleHabit = React.useCallback(async (id: string) => {
+    const before = habitsRef.current.find((h) => h.id === id);
+    if (!before || inFlight.current.has(id)) return;
+    inFlight.current.add(id);
 
-  const toggleHabit = React.useCallback((id: string) => {
-    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done: !h.done } : h)));
+    const next = !before.done;
+    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done: next, streak: Math.max(0, h.streak + (next ? 1 : -1)) } : h)));
+    try {
+      const dto = next ? await api.put<HabitDto>(`/habits/${id}/completions/today`) : await api.del<HabitDto>(`/habits/${id}/completions/today`);
+      setHabits((hs) => hs.map((h) => (h.id === id ? fromDto(dto) : h)));
+      bump();
+    } catch {
+      setHabits((hs) => hs.map((h) => (h.id === id ? before : h)));
+      notify("Couldn’t update that habit. Try again.");
+    } finally {
+      inFlight.current.delete(id);
+    }
   }, []);
 
-  const addHabit = React.useCallback((input: NewHabit) => {
-    const habit: Habit = {
-      id: `habit-${Date.now()}`,
-      name: input.name.trim(),
-      group: input.group,
-      time: formatTimeInput(input.time),
-      streak: 0,
-      history: Array(7).fill(false),
-      done: false,
-    };
-    setHabits((hs) => [...hs, habit].sort(byTime));
+  const addHabit = React.useCallback(async (input: NewHabit) => {
+    const dto = await api.post<HabitDto>("/habits", { ...input, name: input.name.trim() });
+    setHabits((hs) => [...hs, fromDto(dto)].sort(byTime));
+    bump();
   }, []);
 
-  const updateHabit = React.useCallback((id: string, input: NewHabit) => {
-    setHabits((hs) =>
-      hs
-        .map((h) => (h.id === id ? { ...h, name: input.name.trim(), group: input.group, time: formatTimeInput(input.time) } : h))
-        .sort(byTime)
-    );
+  const updateHabit = React.useCallback(async (id: string, input: Partial<NewHabit>) => {
+    const dto = await api.patch<HabitDto>(`/habits/${id}`, input.name === undefined ? input : { ...input, name: input.name.trim() });
+    setHabits((hs) => hs.map((h) => (h.id === id ? fromDto(dto) : h)).sort(byTime));
+    bump();
   }, []);
 
-  const deleteHabit = React.useCallback((id: string) => {
+  const deleteHabit = React.useCallback(async (id: string) => {
+    const before = habitsRef.current;
     setHabits((hs) => hs.filter((h) => h.id !== id));
+    try {
+      await api.del(`/habits/${id}`);
+      bump();
+    } catch {
+      setHabits(before);
+      notify("Couldn’t delete that habit. Try again.");
+    }
   }, []);
 
-  const value = React.useMemo(() => ({ habits, ready, resetHabits, toggleHabit, addHabit, updateHabit, deleteHabit }), [habits, ready, resetHabits, toggleHabit, addHabit, updateHabit, deleteHabit]);
+  const value = React.useMemo(
+    () => ({ habits, status, version, refresh, toggleHabit, addHabit, updateHabit, deleteHabit }),
+    [habits, status, version, refresh, toggleHabit, addHabit, updateHabit, deleteHabit]
+  );
   return <HabitsContext.Provider value={value}>{children}</HabitsContext.Provider>;
 }
 

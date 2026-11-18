@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { TODAY_LABEL } from "@/lib/mock-data";
+import { TODAY_LABEL } from "@/lib/constants";
 
 /** Greeting and date label computed after mount, so SSR and first client render match. */
 export function useNow() {
