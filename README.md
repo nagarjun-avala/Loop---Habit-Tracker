@@ -31,6 +31,18 @@ different sites and drops the cookie. With the server's demo seed you can sign i
 The server emails a verification link at sign-up and a reset link on request (via Resend). Links open these pages, which
 call the API with the token. A banner at the top of the app asks unverified users to verify and lets them resend the email.
 
+## Troubleshooting: sign-in works, then everything is 401 / "signed out"
+The login request succeeded but the browser didn't keep or send the session cookie. Open DevTools → Network, click the login
+request and look for `set-cookie: loop_session=…` (a ⚠ next to it means the browser blocked it), then check that the next request
+(e.g. `/analytics/overview`) has a `cookie` header. This almost always means the app and the API are on **different sites**.
+
+- **Best:** put both under one parent domain (`app.example.com` and `api.example.com`) and keep `COOKIE_SAMESITE=lax` on the server.
+- **No custom domain?** Use Option B in `.env.local.example`: set `API_ORIGIN` (the API's URL) and `NEXT_PUBLIC_API_URL=/api/v1`,
+  rebuild, and the app forwards `/api/v1/*` to the API so the cookie belongs to this site. On the server, keep this app's address in
+  `CORS_ORIGIN` and set `TRUST_PROXY=2` (one proxy for this app, one for the API host) so rate limits count real visitors.
+- In local development use the same host name for both (`localhost` for the app and the API, not `127.0.0.1` for one of them).
+- The app now checks the session right after you sign in and shows this explanation instead of failing silently.
+
 ## Where things live
 - `lib/auth-context.tsx`: who is signed in. `components/auth/`: login/register form and the gates that protect pages.
 - Route groups: `app/(auth)` for login/register, `app/(app)` for everything that needs an account.

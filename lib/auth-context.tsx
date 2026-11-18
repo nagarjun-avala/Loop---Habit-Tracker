@@ -18,6 +18,20 @@ interface AuthContextValue {
   refreshUser: () => Promise<void>;
 }
 
+const NO_COOKIE =
+  "You signed in, but your browser didn’t keep the session cookie. This usually means the app and the API are on different sites. " +
+  "Put them under one domain, or route API calls through this app (see “Cookies across sites” in the README).";
+
+/** Signing in only counts if the very next request is recognised, which proves the cookie was stored and sent. */
+async function confirmSession(): Promise<MeDto> {
+  try {
+    return await api.get<MeDto>("/me");
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) throw new Error(NO_COOKIE);
+    throw e;
+  }
+}
+
 const AuthContext = React.createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -51,13 +65,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [signedOut]);
 
   const login = React.useCallback(async (email: string, password: string) => {
-    setUser(await api.post<MeDto>("/auth/login", { email, password }));
+    await api.post("/auth/login", { email, password });
+    setUser(await confirmSession());
     setStatus("authenticated");
   }, []);
 
   const register = React.useCallback(async (input: { email: string; password: string; name?: string }) => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    setUser(await api.post<MeDto>("/auth/register", { ...input, timezone }));
+    await api.post("/auth/register", { ...input, timezone });
+    setUser(await confirmSession());
     setStatus("authenticated");
   }, []);
 
