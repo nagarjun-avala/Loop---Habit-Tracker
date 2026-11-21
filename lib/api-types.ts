@@ -46,3 +46,13 @@ export interface Overview {
   perfectDays: number;
   bestStreak: { habitId: string; name: string; days: number } | null;
 }
+
+export interface MonthCompletions {
+  habitId: string;
+  month: string;
+  /** days in that month with a check-in */
+  dates: string[];
+  /** first day a check-in makes sense (the day the habit was created) */
+  startDate: string;
+  today: string;
+}

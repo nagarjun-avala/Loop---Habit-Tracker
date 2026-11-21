@@ -16,11 +16,11 @@ Add the front end's origin to the server's `CORS_ORIGIN` (default `http://localh
 
 ## Pages
 - `/login`, `/register`, `/forgot-password`: for signed-out visitors. Everything else redirects to login until you are signed in.
-- `/reset-password`, `/verify-email` and `/confirm-email-change` (each with `?token=…`): where the links in emails land (work signed in or out).
-- `/` Today: check off habits (saved instantly, rolled back if the server says no), add habits. The "This week" card compares with the same days last week.
+- `/reset-password`, `/verify-email`, `/confirm-email-change` and `/unsubscribe` (each with `?token=…`): where the links in emails land (work signed in or out).
+- `/` Today: check off habits (saved instantly, rolled back if the server says no), add habits. Tap any earlier day in the week strip (arrows move between weeks) to see and fix that day. The "This week" card compares with the same days last week.
 - `/analytics` Analytics: week bars, 12-week heatmap, overview stats, per-habit rates (all from the server).
-- `/habits` Habits: edit or delete habits.
-- `/settings` Settings: name, theme, reminder time, plus Account (change email, change password, log out, delete account). Time zone is detected from the browser and sent to the server.
+- `/habits` Habits: edit or delete habits, and open a habit's month calendar to fix any day since it was created.
+- `/settings` Settings: name, theme, daily reminder (email, at your chosen time), plus Account (change email, change password, log out, delete account). Time zone is detected from the browser and sent to the server.
 
 ## Sign-in
 The server keeps you signed in with an `httpOnly` session cookie, so no token is stored in the page.

@@ -35,11 +35,14 @@ export function SettingsView() {
           <AppearanceSetting />
         </SectionCard>
 
-        <SectionCard title="Daily reminder" description="Your preferred time to check in. Notifications aren’t sent yet.">
+        <SectionCard title="Daily reminder" description="We’ll email you at this time on days you still have habits left, in your own time zone.">
           <div className="flex items-center justify-between gap-4">
             <span className="text-base font-medium">Remind me each day</span>
             <Switch label="Daily reminder" checked={settings.reminderEnabled} onCheckedChange={(v) => update({ reminderEnabled: v })} />
           </div>
+          {settings.reminderEnabled && user && !user.emailVerified && (
+            <p className="mt-3 text-sm text-muted-foreground">Verify your email to start receiving reminders. We only send them to confirmed addresses.</p>
+          )}
           <Field label="Reminder time" htmlFor="reminder-time" className="mt-4 max-w-xs">
             <Input
               id="reminder-time"

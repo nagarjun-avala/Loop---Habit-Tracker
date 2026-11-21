@@ -5,11 +5,15 @@ interface DailyProgressCardProps {
   done: number;
   total: number;
   nextUp?: { name: string; time: string };
+  /** Looking at an earlier day rather than today */
+  past?: boolean;
 }
 
-export function DailyProgressCard({ done, total, nextUp }: DailyProgressCardProps) {
+export function DailyProgressCard({ done, total, nextUp, past }: DailyProgressCardProps) {
   const remaining = total - done;
-  const message = remaining === 0 ? "All done for today. Nice work." : `${remaining} to go.${nextUp ? ` Next up: ${nextUp.name.toLowerCase()} at ${nextUp.time}.` : ""}`;
+  const message = past
+    ? remaining === 0 ? "Everything was done this day." : `${remaining} not done this day.`
+    : remaining === 0 ? "All done for today. Nice work." : `${remaining} to go.${nextUp ? ` Next up: ${nextUp.name.toLowerCase()} at ${nextUp.time}.` : ""}`;
 
   return (
     <Card className="flex flex-col items-center gap-3">

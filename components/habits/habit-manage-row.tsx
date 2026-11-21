@@ -1,7 +1,8 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Habit } from "@/lib/types";
 import { DeleteHabitDialog } from "./delete-habit-dialog";
+import { HabitCalendarDialog } from "./habit-calendar-dialog";
 import { HabitFormDialog } from "./habit-form-dialog";
 
 export function HabitManageRow({ habit }: { habit: Habit }) {
@@ -14,6 +15,14 @@ export function HabitManageRow({ habit }: { habit: Habit }) {
       <p className="hidden w-[88px] text-right text-sm font-semibold text-success sm:block">
         {habit.streak > 0 ? `${habit.streak} day streak` : "New"}
       </p>
+      <HabitCalendarDialog
+        habit={habit}
+        trigger={
+          <Button variant="ghost" size="icon" aria-label={`History for ${habit.name}`}>
+            <CalendarDays className="h-4 w-4" aria-hidden />
+          </Button>
+        }
+      />
       <HabitFormDialog
         habit={habit}
         trigger={

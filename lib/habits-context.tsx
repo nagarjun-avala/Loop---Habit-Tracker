@@ -5,7 +5,8 @@ import { api } from "@/lib/api";
 import type { HabitDto } from "@/lib/api-types";
 import { notify } from "@/lib/notify";
 import { useSettings, type LoadStatus } from "@/lib/settings-context";
-import { formatTimeInput, parseDisplayTime } from "@/lib/time";
+import { habitFromDto } from "@/lib/habit-mapper";
+import { parseDisplayTime } from "@/lib/time";
 import type { Habit, TimeOfDay } from "@/lib/types";
 
 export interface NewHabit {
@@ -17,10 +18,14 @@ export interface NewHabit {
 
 interface HabitsContextValue {
   habits: Habit[];
+  /** Today as a "YYYY-MM-DD" string in the user's time zone ("" until loaded). */
+  today: string;
   status: LoadStatus;
   /** Bumps after every successful change, so analytics can refetch. */
   version: number;
   refresh: () => Promise<void>;
+  /** Quietly re-read today's habits (after editing a past day, which changes streaks). */
+  syncToday: () => Promise<void>;
   toggleHabit: (id: string) => Promise<void>;
   addHabit: (input: NewHabit) => Promise<void>;
   updateHabit: (id: string, input: Partial<NewHabit>) => Promise<void>;
@@ -29,16 +34,6 @@ interface HabitsContextValue {
 
 const byTime = (a: Habit, b: Habit) => parseDisplayTime(a.time) - parseDisplayTime(b.time);
 
-const fromDto = (d: HabitDto): Habit => ({
-  id: d.id,
-  name: d.name,
-  group: d.group,
-  time: formatTimeInput(d.time),
-  streak: d.streak,
-  history: d.history,
-  done: d.done,
-});
-
 const HabitsContext = React.createContext<HabitsContextValue | null>(null);
 
 export function HabitsProvider({ children }: { children: React.ReactNode }) {
@@ -46,6 +41,7 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
   const [habits, setHabits] = React.useState<Habit[]>([]);
   const [status, setStatus] = React.useState<LoadStatus>("loading");
   const [version, setVersion] = React.useState(0);
+  const [today, setToday] = React.useState("");
   const habitsRef = React.useRef(habits);
   habitsRef.current = habits;
   const inFlight = React.useRef(new Set<string>());
@@ -54,12 +50,24 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
   const refresh = React.useCallback(async () => {
     setStatus("loading");
     try {
-      const res = await api.get<{ habits: HabitDto[] }>("/habits");
-      setHabits(res.habits.map(fromDto));
+      const res = await api.get<{ today: string; habits: HabitDto[] }>("/habits");
+      setToday(res.today);
+      setHabits(res.habits.map(habitFromDto));
       setStatus("ready");
       setVersion((v) => v + 1);
     } catch {
       setStatus("error");
+    }
+  }, []);
+
+  const syncToday = React.useCallback(async () => {
+    try {
+      const res = await api.get<{ today: string; habits: HabitDto[] }>("/habits");
+      setToday(res.today);
+      setHabits(res.habits.map(habitFromDto));
+      setVersion((v) => v + 1);
+    } catch {
+      /* keep what we have */
     }
   }, []);
 
@@ -77,7 +85,7 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
     setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done: next, streak: Math.max(0, h.streak + (next ? 1 : -1)) } : h)));
     try {
       const dto = next ? await api.put<HabitDto>(`/habits/${id}/completions/today`) : await api.del<HabitDto>(`/habits/${id}/completions/today`);
-      setHabits((hs) => hs.map((h) => (h.id === id ? fromDto(dto) : h)));
+      setHabits((hs) => hs.map((h) => (h.id === id ? habitFromDto(dto) : h)));
       bump();
     } catch {
       setHabits((hs) => hs.map((h) => (h.id === id ? before : h)));
@@ -89,13 +97,13 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
 
   const addHabit = React.useCallback(async (input: NewHabit) => {
     const dto = await api.post<HabitDto>("/habits", { ...input, name: input.name.trim() });
-    setHabits((hs) => [...hs, fromDto(dto)].sort(byTime));
+    setHabits((hs) => [...hs, habitFromDto(dto)].sort(byTime));
     bump();
   }, []);
 
   const updateHabit = React.useCallback(async (id: string, input: Partial<NewHabit>) => {
     const dto = await api.patch<HabitDto>(`/habits/${id}`, input.name === undefined ? input : { ...input, name: input.name.trim() });
-    setHabits((hs) => hs.map((h) => (h.id === id ? fromDto(dto) : h)).sort(byTime));
+    setHabits((hs) => hs.map((h) => (h.id === id ? habitFromDto(dto) : h)).sort(byTime));
     bump();
   }, []);
 
@@ -112,8 +120,8 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = React.useMemo(
-    () => ({ habits, status, version, refresh, toggleHabit, addHabit, updateHabit, deleteHabit }),
-    [habits, status, version, refresh, toggleHabit, addHabit, updateHabit, deleteHabit]
+    () => ({ habits, today, status, version, refresh, syncToday, toggleHabit, addHabit, updateHabit, deleteHabit }),
+    [habits, today, status, version, refresh, syncToday, toggleHabit, addHabit, updateHabit, deleteHabit]
   );
   return <HabitsContext.Provider value={value}>{children}</HabitsContext.Provider>;
 }
