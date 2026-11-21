@@ -1,5 +1,10 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 
+// A very common deployment mistake: the host never got NEXT_PUBLIC_API_URL, so the built app still calls localhost.
+if (typeof window !== "undefined" && process.env.NODE_ENV === "production" && BASE.startsWith("http://localhost") && !/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) {
+  console.error(`[Loop] This app is calling ${BASE}. Set NEXT_PUBLIC_API_URL (or API_ORIGIN) on your host and rebuild.`);
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

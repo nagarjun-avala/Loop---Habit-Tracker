@@ -37,17 +37,21 @@ different sites and drops the cookie. With the server's demo seed you can sign i
 The server emails a verification link at sign-up and a reset link on request (via Resend). Links open these pages, which
 call the API with the token. A banner at the top of the app asks unverified users to verify and lets them resend the email.
 
-## Troubleshooting: sign-in works, then everything is 401 / "signed out"
-The login request succeeded but the browser didn't keep or send the session cookie. Open DevTools → Network, click the login
-request and look for `set-cookie: loop_session=…` (a ⚠ next to it means the browser blocked it), then check that the next request
-(e.g. `/analytics/overview`) has a `cookie` header. This almost always means the app and the API are on **different sites**.
+## Hosting the app and the API on different servers
+The sign-in cookie only travels between hosts that are on the **same site**, so how you connect them matters. In order of preference:
 
-- **Best:** put both under one parent domain (`app.example.com` and `api.example.com`) and keep `COOKIE_SAMESITE=lax` on the server.
-- **No custom domain?** Use Option B in `.env.local.example`: set `API_ORIGIN` (the API's URL) and `NEXT_PUBLIC_API_URL=/api/v1`,
-  rebuild, and the app forwards `/api/v1/*` to the API so the cookie belongs to this site. On the server, keep this app's address in
-  `CORS_ORIGIN` and set `TRUST_PROXY=2` (one proxy for this app, one for the API host) so rate limits count real visitors.
-- In local development use the same host name for both (`localhost` for the app and the API, not `127.0.0.1` for one of them).
-- The app now checks the session right after you sign in and shows this explanation instead of failing silently.
+1. **One parent domain (best).** `app.example.com` here, `api.example.com` on the server. Set `NEXT_PUBLIC_API_URL=https://api.example.com/api/v1` before building.
+   On the server: `APP_URL=https://app.example.com`, `CORS_ORIGIN=https://app.example.com`, `API_URL=https://api.example.com`, `COOKIE_SAMESITE=lax`, `TRUST_PROXY=1`.
+2. **Different domains (e.g. two `*.vercel.app` or `*.onrender.com` projects): proxy through this app.** Set only `API_ORIGIN=https://your-api…` here (before
+   building) and this app forwards `/api/v1/*` to the API, so the browser only talks to this site. On the server: `APP_URL` and `CORS_ORIGIN` are this app's
+   address, and `TRUST_PROXY=2` (this app plus the API host's own proxy). Needs a host that runs Next.js (Vercel, Netlify, Node), not a static export.
+3. **Last resort: `COOKIE_SAMESITE=none` on the server.** Works only where third-party cookies are allowed; Safari and Firefox block them.
+
+Run `npm run check:deploy` on the server to check this. It names the problem if the two hosts won't share cookies.
+
+**Symptom of getting it wrong:** sign-in appears to work, then every request is 401 and you're signed out. Check DevTools → Network → the login request for
+`set-cookie: loop_session=…` (a ⚠ means the browser blocked it). The app also now says so on the login form.
+Also, in local development use `localhost` for both (not `127.0.0.1` for one of them).
 
 ## Where things live
 - `lib/auth-context.tsx`: who is signed in. `components/auth/`: login/register form and the gates that protect pages.
