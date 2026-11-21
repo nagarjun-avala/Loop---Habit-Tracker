@@ -11,6 +11,7 @@ import type { Overview, WeekResponse } from "@/lib/api-types";
 import { addDaysISO, formatLongDate, formatShortDate } from "@/lib/calendar";
 import { describeDelta } from "@/lib/compare";
 import { groupOrder } from "@/lib/constants";
+import { counts, isRestDay } from "@/lib/schedule";
 import { useHabits } from "@/lib/habits-context";
 import { useSettings } from "@/lib/settings-context";
 import { useApi } from "@/lib/use-api";
@@ -39,14 +40,20 @@ export function TodayView() {
 
   const isPast = !day.isToday;
   const habits = day.habits;
+  // What counts today: habits that are expected, or that you did anyway. Rest days and "N a week" habits with slack don't.
+  const counted = habits.filter(counts);
+  const rest = habits.filter(isRestDay);
+  const listed = habits.filter((h) => !isRestDay(h));
   const done = habits.filter((h) => h.done).length;
-  const nextUp = isPast ? undefined : habits.find((h) => !h.done);
-  const longest = todayHabits.length ? todayHabits.reduce((a, b) => (b.streak > a.streak ? b : a)) : undefined;
+  const nextUp = isPast ? undefined : counted.find((h) => !h.done);
+  // compare streaks in days so a 4-week streak can beat a 10-day one
+  const inDays = (h: { streak: number; streakUnit: string }) => (h.streakUnit === "week" ? h.streak * 7 : h.streak);
+  const longest = todayHabits.length ? todayHabits.reduce((a, b) => (inDays(b) > inDays(a) ? b : a)) : undefined;
   const weekDays = week.data?.days ?? [];
   const showsCurrentWeek = weekDays.some((d) => d.isToday);
 
   // the selected day's percentage updates instantly as you tick things off
-  const days = weekDays.map((d) => (d.isoDate === date && !day.loading ? { ...d, percent: habits.length ? Math.round((done / habits.length) * 100) : 0 } : d));
+  const days = weekDays.map((d) => (d.isoDate === date && !day.loading ? { ...d, total: counted.length, percent: counted.length ? Math.round((done / counted.length) * 100) : 0 } : d));
 
   const backToToday = () => {
     setPicked(null);
@@ -104,13 +111,16 @@ export function TodayView() {
             ) : habits.length === 0 ? (
               <p className="py-6 text-sm text-muted-foreground">No habits existed on this day yet.</p>
             ) : (
-              groupOrder.map((g) => <HabitGroup key={g} title={g} habits={habits.filter((h) => h.group === g)} onToggle={day.toggle} />)
+              <>
+                {groupOrder.map((g) => <HabitGroup key={g} title={g} habits={listed.filter((h) => h.group === g)} onToggle={day.toggle} />)}
+                <HabitGroup title={isPast ? "Not scheduled that day" : "Not scheduled today"} habits={rest} onToggle={day.toggle} />
+              </>
             )}
           </Card>
 
           <aside className="flex flex-col gap-6">
-            <DailyProgressCard done={done} total={habits.length} nextUp={nextUp} past={isPast} />
-            <StatCard label="Longest active streak" value={`${longest.streak} days`} caption={longest.name} />
+            <DailyProgressCard done={done} total={counted.length} nextUp={nextUp} past={isPast} />
+            <StatCard label="Longest active streak" value={`${longest.streak} ${longest.streakUnit}${longest.streak === 1 ? "" : "s"}`} caption={longest.name} />
             <StatCard
               tone="highlight"
               label="This week"

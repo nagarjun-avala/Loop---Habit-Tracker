@@ -1,4 +1,4 @@
-import type { DaySummary, TimeOfDay } from "./types";
+import type { DaySummary, Schedule, TimeOfDay } from "./types";
 
 export interface HabitDto {
   id: string;
@@ -10,6 +10,12 @@ export interface HabitDto {
   streak: number;
   /** the 7 days before today, oldest first */
   history: boolean[];
+  streakUnit: "day" | "week";
+  schedule: Schedule;
+  due: boolean;
+  weekDone?: number;
+  weekTarget?: number;
+  rate7: number | null;
 }
 
 export interface MeDto {
@@ -44,7 +50,7 @@ export interface Overview {
   delta: number | null;
   checkIns: number;
   perfectDays: number;
-  bestStreak: { habitId: string; name: string; days: number } | null;
+  bestStreak: { habitId: string; name: string; streak: number; unit: "day" | "week" } | null;
 }
 
 export interface MonthCompletions {

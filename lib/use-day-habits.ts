@@ -3,7 +3,7 @@
 import * as React from "react";
 import { api } from "@/lib/api";
 import type { HabitDto } from "@/lib/api-types";
-import { habitFromDto } from "@/lib/habit-mapper";
+import { habitFromDto, toggledOptimistically } from "@/lib/habit-mapper";
 import { useHabits } from "@/lib/habits-context";
 import { notify } from "@/lib/notify";
 import type { Habit } from "@/lib/types";
@@ -50,7 +50,7 @@ export function useDayHabits(date: string) {
       const patch = (fn: (h: Habit) => Habit) =>
         setPast((p) => (p && p.date === date ? { ...p, habits: p.habits.map((h) => (h.id === id ? fn(h) : h)) } : p));
       const next = !before.done;
-      patch((h) => ({ ...h, done: next, streak: Math.max(0, h.streak + (next ? 1 : -1)) }));
+      patch((h) => toggledOptimistically(h, next));
       try {
         const dto = next ? await api.put<HabitDto>(`/habits/${id}/completions/${date}`) : await api.del<HabitDto>(`/habits/${id}/completions/${date}`);
         patch(() => habitFromDto(dto));

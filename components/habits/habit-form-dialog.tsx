@@ -6,10 +6,13 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useAuth } from "@/lib/auth-context";
 import { useHabits } from "@/lib/habits-context";
 import { groupOrder } from "@/lib/constants";
 import { groupForTime, toInputTime } from "@/lib/time";
-import type { Habit, TimeOfDay } from "@/lib/types";
+import { DAILY } from "@/lib/schedule";
+import type { Habit, Schedule, TimeOfDay } from "@/lib/types";
+import { SchedulePicker } from "./schedule-picker";
 
 const MAX_NAME = 60;
 
@@ -21,12 +24,14 @@ interface HabitFormDialogProps {
 
 export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
   const { addHabit, updateHabit } = useHabits();
+  const weekStartsOn = useAuth().user?.weekStartsOn ?? 1;
   const editing = !!habit;
 
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [time, setTime] = React.useState("08:00");
   const [group, setGroup] = React.useState<TimeOfDay>("Morning");
+  const [schedule, setSchedule] = React.useState<Schedule>(DAILY);
   const [error, setError] = React.useState<string>();
   const [formError, setFormError] = React.useState<string>();
   const [submitting, setSubmitting] = React.useState(false);
@@ -37,6 +42,7 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
       setName(habit?.name ?? "");
       setTime(habit ? toInputTime(habit.time) : "08:00");
       setGroup(habit?.group ?? "Morning");
+      setSchedule(habit?.schedule ?? DAILY);
       setError(undefined);
       setFormError(undefined);
     }
@@ -54,8 +60,8 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
     setSubmitting(true);
     setFormError(undefined);
     try {
-      if (habit) await updateHabit(habit.id, { name, group, time });
-      else await addHabit({ name, group, time });
+      if (habit) await updateHabit(habit.id, { name, group, time, schedule });
+      else await addHabit({ name, group, time, schedule });
       setOpen(false);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Something went wrong. Try again.");
@@ -71,7 +77,7 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
         <form onSubmit={onSubmit} noValidate>
           <DialogHeader>
             <DialogTitle>{editing ? "Edit habit" : "Add a habit"}</DialogTitle>
-            <DialogDescription>{editing ? "Your streak and history stay as they are." : "Small and specific is easier to keep."}</DialogDescription>
+            <DialogDescription>{editing ? "Your history stays. Streaks are recalculated if you change how often." : "Small and specific is easier to keep."}</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-4">
@@ -94,6 +100,9 @@ export function HabitFormDialog({ trigger, habit }: HabitFormDialogProps) {
             </Field>
             <Field label="Time of day">
               <SegmentedControl label="Time of day" value={group} options={groupOrder} onChange={setGroup} />
+            </Field>
+            <Field label="How often">
+              <SchedulePicker value={schedule} onChange={setSchedule} weekStartsOn={weekStartsOn} />
             </Field>
           </div>
 

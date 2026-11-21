@@ -11,7 +11,9 @@ interface DailyProgressCardProps {
 
 export function DailyProgressCard({ done, total, nextUp, past }: DailyProgressCardProps) {
   const remaining = total - done;
-  const message = past
+  const message = total === 0
+    ? past ? "Nothing was expected this day." : "Nothing is scheduled today. Enjoy the rest."
+    : past
     ? remaining === 0 ? "Everything was done this day." : `${remaining} not done this day.`
     : remaining === 0 ? "All done for today. Nice work." : `${remaining} to go.${nextUp ? ` Next up: ${nextUp.name.toLowerCase()} at ${nextUp.time}.` : ""}`;
 

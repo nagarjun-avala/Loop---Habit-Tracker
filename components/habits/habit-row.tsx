@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
+import { describeSchedule, isRestDay, streakLabel } from "@/lib/schedule";
 import type { Habit } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { HabitCheck } from "./habit-check";
 import { StreakDots } from "./streak-dots";
 
@@ -8,9 +9,16 @@ interface HabitRowProps {
   onToggle: (id: string) => void;
 }
 
+/** Second line under the name: time, plus how often it's expected (when that isn't simply every day). */
+function detail(h: Habit) {
+  if (h.schedule.type === "weekly") return `${h.weekDone ?? 0} of ${h.weekTarget ?? h.schedule.times} this week`;
+  if (h.schedule.type === "days") return describeSchedule(h.schedule);
+  return null;
+}
+
 export function HabitRow({ habit, onToggle }: HabitRowProps) {
   return (
-    <li className="flex items-center gap-3 border-b border-muted py-2.5 last:border-0 md:gap-4">
+    <li className={cn("flex items-center gap-3 border-b border-muted py-2.5 last:border-0 md:gap-4", isRestDay(habit) && "opacity-60")}>
       <HabitCheck
         checked={habit.done}
         label={`Mark ${habit.name} ${habit.done ? "incomplete" : "done"}`}
@@ -18,10 +26,10 @@ export function HabitRow({ habit, onToggle }: HabitRowProps) {
       />
       <div className="min-w-0 flex-1">
         <p className={cn("text-base font-medium", habit.done && "text-muted-foreground line-through")}>{habit.name}</p>
-        <p className="text-sm text-muted-foreground">{habit.time}</p>
+        <p className="text-sm text-muted-foreground">{[habit.time, detail(habit)].filter(Boolean).join(" · ")}</p>
       </div>
       <StreakDots history={habit.history} className="hidden sm:flex" />
-      <p className="w-[88px] text-right text-sm font-semibold text-success">{habit.streak} day streak</p>
+      <p className="w-[100px] shrink-0 text-right text-sm font-semibold text-success">{streakLabel(habit)}</p>
     </li>
   );
 }

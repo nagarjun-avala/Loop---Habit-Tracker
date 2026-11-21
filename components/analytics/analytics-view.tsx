@@ -45,7 +45,7 @@ function AnalyticsContent({ habits }: { habits: Habit[] }) {
         <StatCard
           tone="highlight"
           label="Best streak"
-          value={o?.bestStreak ? `${o.bestStreak.days} days` : "–"}
+          value={o?.bestStreak ? `${o.bestStreak.streak} ${o.bestStreak.unit}${o.bestStreak.streak === 1 ? "" : "s"}` : "–"}
           caption={o?.bestStreak?.name ?? "No streaks yet"}
         />
       </div>

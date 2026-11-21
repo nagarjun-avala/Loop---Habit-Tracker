@@ -5,15 +5,16 @@ import { api } from "@/lib/api";
 import type { HabitDto } from "@/lib/api-types";
 import { notify } from "@/lib/notify";
 import { useSettings, type LoadStatus } from "@/lib/settings-context";
-import { habitFromDto } from "@/lib/habit-mapper";
+import { habitFromDto, toggledOptimistically } from "@/lib/habit-mapper";
 import { parseDisplayTime } from "@/lib/time";
-import type { Habit, TimeOfDay } from "@/lib/types";
+import type { Habit, Schedule, TimeOfDay } from "@/lib/types";
 
 export interface NewHabit {
   name: string;
   group: TimeOfDay;
   /** "HH:mm" */
   time: string;
+  schedule: Schedule;
 }
 
 interface HabitsContextValue {
@@ -82,7 +83,7 @@ export function HabitsProvider({ children }: { children: React.ReactNode }) {
     inFlight.current.add(id);
 
     const next = !before.done;
-    setHabits((hs) => hs.map((h) => (h.id === id ? { ...h, done: next, streak: Math.max(0, h.streak + (next ? 1 : -1)) } : h)));
+    setHabits((hs) => hs.map((h) => (h.id === id ? toggledOptimistically(h, next) : h)));
     try {
       const dto = next ? await api.put<HabitDto>(`/habits/${id}/completions/today`) : await api.del<HabitDto>(`/habits/${id}/completions/today`);
       setHabits((hs) => hs.map((h) => (h.id === id ? habitFromDto(dto) : h)));

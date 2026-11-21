@@ -22,6 +22,12 @@ Add the front end's origin to the server's `CORS_ORIGIN` (default `http://localh
 - `/habits` Habits: edit or delete habits, and open a habit's month calendar to fix any day since it was created.
 - `/settings` Settings: name, theme, daily reminder (email, at your chosen time), plus Account (change email, change password, log out, delete account). Time zone is detected from the browser and sent to the server.
 
+## Schedules
+Each habit is **every day**, **certain days** (e.g. weekdays), or **N times a week**. A habit counts on a day if it was expected or you did it anyway,
+so rest days never look like misses: "Not scheduled today" habits are dimmed and left out of the ring, "N a week" habits show "2 of 3 this week" and only
+count as to-dos once you're running out of days, and streaks count scheduled days (or weeks that hit the target). The rules are computed on the server
+(`loop-server/src/lib/schedule.ts`); this app just shows them. Pick a schedule in the Add/Edit habit dialog (`components/habits/schedule-picker.tsx`).
+
 ## Sign-in
 The server keeps you signed in with an `httpOnly` session cookie, so no token is stored in the page.
 Use the same host name for the front end and API in development (both `localhost`), or the browser treats them as

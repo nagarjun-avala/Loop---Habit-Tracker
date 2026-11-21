@@ -32,6 +32,7 @@ export function WeekStrip({ days, selected, onSelect, onPrev, onNext, nextDisabl
       <ol className="flex min-w-0 flex-1 gap-1.5 md:gap-2.5" aria-label="Week">
         {days.map((d) => {
           const future = d.percent === null;
+          const rest = !future && d.total === 0; // nothing was expected that day
           const isSelected = d.isoDate === selected;
           return (
             <li key={d.isoDate ?? d.date} className="min-w-0 flex-1">
@@ -40,7 +41,7 @@ export function WeekStrip({ days, selected, onSelect, onPrev, onNext, nextDisabl
                 disabled={future || !d.isoDate}
                 aria-pressed={isSelected}
                 aria-current={d.isToday ? "date" : undefined}
-                aria-label={`${d.label} ${d.date}${d.isToday ? ", today" : ""}${future ? ", not yet" : `, ${d.percent}% done`}`}
+                aria-label={`${d.label} ${d.date}${d.isToday ? ", today" : ""}${future ? ", not yet" : rest ? ", nothing scheduled" : `, ${d.percent}% done`}`}
                 onClick={() => d.isoDate && onSelect(d.isoDate)}
                 className={cn(
                   "w-full rounded-2xl border py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -50,8 +51,8 @@ export function WeekStrip({ days, selected, onSelect, onPrev, onNext, nextDisabl
               >
                 <div className="text-[13px] opacity-80">{d.label}</div>
                 <div className="my-0.5 font-display text-xl font-semibold">{d.date}</div>
-                <div className={cn("text-xs", future ? "text-muted-foreground" : isSelected ? "font-semibold" : "font-semibold text-success")}>
-                  {future ? "–" : `${d.percent}%`}
+                <div className={cn("text-xs", future || rest ? "text-muted-foreground" : isSelected ? "font-semibold" : "font-semibold text-success")}>
+                  {future || rest ? "–" : `${d.percent}%`}
                 </div>
               </button>
             </li>
