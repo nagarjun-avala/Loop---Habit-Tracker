@@ -19,8 +19,9 @@ interface AuthContextValue {
 }
 
 const NO_COOKIE =
-  "You signed in, but your browser didn’t keep the session cookie. This usually means the app and the API are on different sites. " +
-  "Put them under one domain, or route API calls through this app (see “Cookies across sites” in the README).";
+  "You signed in, but this browser blocked the sign-in cookie, so you can’t stay signed in. " +
+  "This happens when the app and its server are on different websites (iPhones and some Android browsers block that). " +
+  "If you run this app, see “Hosting the app and the API on different servers” in the README.";
 
 /** Signing in only counts if the very next request is recognised, which proves the cookie was stored and sent. */
 async function confirmSession(): Promise<MeDto> {

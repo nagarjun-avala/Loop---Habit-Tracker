@@ -38,20 +38,26 @@ The server emails a verification link at sign-up and a reset link on request (vi
 call the API with the token. A banner at the top of the app asks unverified users to verify and lets them resend the email.
 
 ## Hosting the app and the API on different servers
-The sign-in cookie only travels between hosts that are on the **same site**, so how you connect them matters. In order of preference:
+Browsers only keep the sign-in cookie of a site you are actually on. If the app is at `my-app.vercel.app` and the API at `my-api.onrender.com` (or another
+`*.vercel.app`), the API's cookie is a *third-party* cookie, which iPhones (every iOS browser) and many Android setups block. Desktop Chrome still allows it,
+so the symptom is "login works on my laptop but not on phones": you sign in, then the app says your browser didn't keep the cookie.
 
-1. **One parent domain (best).** `app.example.com` here, `api.example.com` on the server. Set `NEXT_PUBLIC_API_URL=https://api.example.com/api/v1` before building.
-   On the server: `APP_URL=https://app.example.com`, `CORS_ORIGIN=https://app.example.com`, `API_URL=https://api.example.com`, `COOKIE_SAMESITE=lax`, `TRUST_PROXY=1`.
-2. **Different domains (e.g. two `*.vercel.app` or `*.onrender.com` projects): proxy through this app.** Set only `API_ORIGIN=https://your-api…` here (before
-   building) and this app forwards `/api/v1/*` to the API, so the browser only talks to this site. On the server: `APP_URL` and `CORS_ORIGIN` are this app's
-   address, and `TRUST_PROXY=2` (this app plus the API host's own proxy). Needs a host that runs Next.js (Vercel, Netlify, Node), not a static export.
-3. **Last resort: `COOKIE_SAMESITE=none` on the server.** Works only where third-party cookies are allowed; Safari and Firefox block them.
+**What this app does about it:** in production builds it forwards `/api/v1/*` to your API itself, so the browser only talks to the app's own address and the cookie
+is first-party. You don't have to do anything special:
 
-Run `npm run check:deploy` on the server to check this. It names the problem if the two hosts won't share cookies.
+1. Set `NEXT_PUBLIC_API_URL=https://your-api.example.com/api/v1` (or `API_ORIGIN=https://your-api.example.com`) **before building** (on Vercel: Project → Settings →
+   Environment Variables, then redeploy).
+2. On the API server: `APP_URL` and `CORS_ORIGIN` = this app's exact address (e.g. `https://my-app.vercel.app`; comma-separate extra ones), `COOKIE_SAMESITE=lax`,
+   `TRUST_PROXY=2`, and leave `API_URL` unset (browsers never call it directly).
+3. Switching the API to another host (Render ↔ Vercel) means changing that one address and redeploying the app, since it is baked in at build time.
 
-**Symptom of getting it wrong:** sign-in appears to work, then every request is 401 and you're signed out. Check DevTools → Network → the login request for
-`set-cookie: loop_session=…` (a ⚠ means the browser blocked it). The app also now says so on the login form.
-Also, in local development use `localhost` for both (not `127.0.0.1` for one of them).
+**Direct mode** (browser calls the API itself) is only for when both live under one parent domain, `app.example.com` + `api.example.com`: add `API_MODE=direct`.
+Local development is always direct.
+
+Run `npm run check:deploy` on the server to check the server's side. If login still fails, open DevTools → Network → the login request: you should see
+`set-cookie: loop_session=…` on a request to **your app's own address** (`/api/v1/auth/login`). If the request goes to a different address, the app was built
+without the setting above.
+In local development use `localhost` for both (not `127.0.0.1` for one of them).
 
 ## Where things live
 - `lib/auth-context.tsx`: who is signed in. `components/auth/`: login/register form and the gates that protect pages.
