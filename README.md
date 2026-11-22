@@ -60,3 +60,6 @@ Also, in local development use `localhost` for both (not `127.0.0.1` for one of 
 - `lib/habits-context.tsx`, `lib/settings-context.tsx`: server-backed state with optimistic updates.
 - Theme colors are CSS variables in `app/globals.css` (`:root` and `.dark`).
 - Add shadcn components with `npx shadcn@latest add <name>`.
+
+## Time zone
+The app sends the browser's time zone to the server at sign-up and after sign-in. Until it knows it, it shows **Asia/Kolkata (IST)**, which is also the server's default.

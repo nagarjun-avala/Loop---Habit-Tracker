@@ -23,7 +23,7 @@ interface SettingsContextValue {
   update: (patch: Editable) => void;
 }
 
-const DEFAULTS: Settings = { name: "", timezone: "UTC", reminderEnabled: true, reminderTime: "20:00" };
+const DEFAULTS: Settings = { name: "", timezone: "Asia/Kolkata", reminderEnabled: true, reminderTime: "20:00" };
 const SettingsContext = React.createContext<SettingsContextValue | null>(null);
 
 const fromMe = (me: MeDto): Settings => ({
