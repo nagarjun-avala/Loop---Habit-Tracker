@@ -7,10 +7,10 @@ import { dayName, orderedDays, WEEKDAYS, WEEKEND } from "@/lib/schedule";
 import type { Schedule } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const MODES = ["Every day", "Certain days", "Times a week"] as const;
+const MODES = ["Every day", "Some days", "Per week"] as const;
 type Mode = (typeof MODES)[number];
 
-const modeOf = (s: Schedule): Mode => (s.type === "daily" ? "Every day" : s.type === "days" ? "Certain days" : "Times a week");
+const modeOf = (s: Schedule): Mode => (s.type === "daily" ? "Every day" : s.type === "days" ? "Some days" : "Per week");
 
 interface SchedulePickerProps {
   value: Schedule;
@@ -22,7 +22,7 @@ interface SchedulePickerProps {
 export function SchedulePicker({ value, onChange, weekStartsOn }: SchedulePickerProps) {
   const setMode = (mode: Mode) => {
     if (mode === modeOf(value)) return;
-    onChange(mode === "Every day" ? { type: "daily" } : mode === "Certain days" ? { type: "days", days: WEEKDAYS } : { type: "weekly", times: 3 });
+    onChange(mode === "Every day" ? { type: "daily" } : mode === "Some days" ? { type: "days", days: WEEKDAYS } : { type: "weekly", times: 3 });
   };
 
   return (
@@ -62,11 +62,11 @@ export function SchedulePicker({ value, onChange, weekStartsOn }: SchedulePicker
 
       {value.type === "weekly" && (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
             <Button type="button" variant="outline" size="icon" aria-label="Fewer times a week" disabled={value.times <= 1} onClick={() => onChange({ type: "weekly", times: value.times - 1 })}>
               <Minus className="h-4 w-4" aria-hidden />
             </Button>
-            <p className="min-w-[8.5rem] text-center text-[15px]" aria-live="polite">
+            <p className="flex-1 text-center text-[15px]" aria-live="polite">
               <span className="font-display text-2xl font-semibold">{value.times}</span> {value.times === 1 ? "time" : "times"} a week
             </p>
             <Button type="button" variant="outline" size="icon" aria-label="More times a week" disabled={value.times >= 6} onClick={() => onChange({ type: "weekly", times: value.times + 1 })}>

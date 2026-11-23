@@ -38,7 +38,7 @@ function AnalyticsContent({ habits }: { habits: Habit[] }) {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4 lg:gap-6">
         <StatCard label="Completion rate" value={o?.completionRate != null ? `${o.completionRate}%` : "–"} caption={o ? describeDelta(o.delta) : "Loading…"} />
         <StatCard label="Check-ins" value={o ? String(o.checkIns) : "–"} caption="Habits completed this week" />
         <StatCard label="Perfect days" value={o ? String(o.perfectDays) : "–"} caption="Days with every habit done" />
@@ -50,7 +50,7 @@ function AnalyticsContent({ habits }: { habits: Habit[] }) {
         />
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
         <SectionCard title="This week" description="Share of habits completed each day">
           <div className="min-h-[230px]">
             <WeeklyBars days={week.data?.days ?? []} />

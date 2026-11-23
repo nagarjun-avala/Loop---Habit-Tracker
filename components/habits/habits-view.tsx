@@ -36,7 +36,7 @@ export function HabitsView() {
           action={<AddHabitDialog trigger={addButton} />}
         />
       ) : (
-        <div className="grid items-start gap-6 xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
           {groupOrder.map((g) => {
             const items = habits.filter((h) => h.group === g);
             return (

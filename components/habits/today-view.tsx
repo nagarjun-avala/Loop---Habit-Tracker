@@ -98,7 +98,7 @@ export function TodayView() {
           action={<AddHabitDialog trigger={addButton} />}
         />
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <Card className="px-5 pb-5 pt-3 md:px-7">
             <div className="flex items-center justify-between pt-3.5">
               <h2 className="text-[22px] font-semibold">{isPast ? `Habits on ${formatShortDate(date)}` : "Today’s habits"}</h2>

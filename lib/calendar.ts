@@ -34,3 +34,13 @@ export const formatLongDate = (date: string) =>
 /** "Sat 14 Nov" */
 export const formatShortDate = (date: string) =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).replace(",", "");
+
+/** "16 – 22 Nov" or, across months, "28 Nov – 4 Dec" */
+export function formatRange(from: string, to: string): string {
+  const f = new Date(`${from}T00:00:00Z`);
+  const t = new Date(`${to}T00:00:00Z`);
+  const month = (d: Date) => d.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
+  return f.getUTCMonth() === t.getUTCMonth()
+    ? `${f.getUTCDate()} – ${t.getUTCDate()} ${month(t)}`
+    : `${f.getUTCDate()} ${month(f)} – ${t.getUTCDate()} ${month(t)}`;
+}

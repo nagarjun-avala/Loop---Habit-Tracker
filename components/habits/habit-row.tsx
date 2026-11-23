@@ -26,10 +26,14 @@ export function HabitRow({ habit, onToggle }: HabitRowProps) {
       />
       <div className="min-w-0 flex-1">
         <p className={cn("text-base font-medium", habit.done && "text-muted-foreground line-through")}>{habit.name}</p>
-        <p className="text-sm text-muted-foreground">{[habit.time, detail(habit)].filter(Boolean).join(" · ")}</p>
+        <p className="text-sm text-muted-foreground">
+          {[habit.time, detail(habit)].filter(Boolean).join(" · ")}
+          {/* phones: the streak goes here, on the second line, instead of taking width from the name */}
+          <span className="whitespace-nowrap font-semibold text-success sm:hidden"> · {streakLabel(habit)}</span>
+        </p>
       </div>
       <StreakDots history={habit.history} className="hidden sm:flex" />
-      <p className="w-[100px] shrink-0 text-right text-sm font-semibold text-success">{streakLabel(habit)}</p>
+      <p className="hidden w-[100px] shrink-0 text-right text-sm font-semibold text-success sm:block">{streakLabel(habit)}</p>
     </li>
   );
 }
